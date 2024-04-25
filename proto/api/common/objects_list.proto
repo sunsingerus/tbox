@@ -1,0 +1,41 @@
+// Copyright The TBox Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package api.common;
+option go_package = "github.com/sunsingerus/tbox/pkg/api/common";
+
+import "api/common/file.proto";
+import "api/common/report.proto";
+import "api/common/task.proto";
+import "api/common/status.proto";
+import "api/common/object_status.proto";
+
+// ObjectsList specifies list of the objects
+message ObjectsList {
+    // Status specifies general status of the whole list
+    Status status = 100;
+
+    // Reports specifies reports regarding the requested objects
+    repeated Report reports = 500;
+    // Tasks specifies tasks of the requested objects
+    repeated Task tasks = 600;
+    // Statuses specifies statuses of the requested objects
+    repeated Status statuses = 700;
+    // ObjectsStatus specifies object status
+    repeated ObjectStatus object_statuses = 800;
+    // Files specifies files of the requested objects
+    repeated File files = 900;
+}

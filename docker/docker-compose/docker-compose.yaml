@@ -1,0 +1,300 @@
+#
+# !!! IMPORTANT !!!
+# Do not forget to change volume paths when moving file along.
+#
+
+#
+# VARIABLES:
+#
+# ${NETWORK_NAME}
+# ${VOLUMES_ROOT}
+#
+# ${MINIO_ROOT_USER}
+# ${MINIO_ROOT_PASSWORD}
+#
+# ${MYSQL_DATABASE}
+# ${MYSQL_USER}
+# ${MYSQL_PASSWORD}
+# ${MYSQL_ROOT_PASSWORD}
+#
+# ${POSTGRESQL_DATABASE}
+# ${POSTGRESQL_USER}
+# ${POSTGRESQL_PASSWORD}
+# ${POSTGRESQL_ROOT_PASSWORD}
+#
+# ${CLICKHOUSE_DATABASE}
+# ${CLICKHOUSE_USER}
+# ${CLICKHOUSE_PASSWORD}
+
+version: '3.7'
+
+networks:
+  default:
+    driver: bridge
+    name: ${NETWORK_NAME}
+
+services:
+
+  # Zookeeper is required by Kafka
+  zookeeper:
+    image: zookeeper:3.7.0
+    restart: always
+    # Expose this port internally. This port will not be available from host-machine
+    #expose:
+    #  - "2181"
+    # Expose this port externally. This port will be available from host-machine as
+    # Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+    # tcp        0      0 0.0.0.0:9092            0.0.0.0:*               LISTEN      79906/docker-proxy
+    ports:
+      - "2181:2181"
+    volumes:
+      # config volume has to have config files presented. Include it only in case folder has config files
+      #- ${VOLUMES_ROOT}/zookeeper/conf/zoo.cfg:/conf/zoo.cfg
+      - ${VOLUMES_ROOT}/zookeeper/data:/data
+      - ${VOLUMES_ROOT}/zookeeper/datalog:/datalog
+
+  # Kafka is one of the core components of the system
+  kafka:
+    image: wurstmeister/kafka:2.13-2.7.1
+    restart: always
+    # Expose this port externally. This port will be available from host-machine as
+    # Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+    # tcp        0      0 0.0.0.0:9092            0.0.0.0:*               LISTEN      79906/docker-proxy
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    # Expose this port internally. This port will not be available from host-machine
+    #expose:
+    #  - "9093"
+    # Check volumes on dockerhub
+    # https://hub.docker.com/layers/wurstmeister/kafka/latest/images/sha256-4bad02cf8f07d0bf65d5cc73cce7aa75f9a90e32b585f867fce7c3fff229bd6d?context=explore
+    # VOLUME [/kafka]
+    volumes:
+      - ${VOLUMES_ROOT}/kafka/data:/kafka
+    environment:
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      # Listen OUTSIDE connection on host-machine 127.0.0.1:9092
+      # Replace IP 127.0.0.1 with your host-machine IP-address in case you need to accept traffic from other machines
+      KAFKA_ADVERTISED_LISTENERS: INSIDE://kafka:9093,OUTSIDE://127.0.0.1:9092
+      # Do not use any password protection at all
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:PLAINTEXT
+      # Another approach:
+      # 1. Do not use passwords for INSIDE
+      # 2. Use password protection for OUTSIDE connections
+      # KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INSIDE:PLAINTEXT,OUTSIDE:SASL_PLAINTEX
+      # In case username/password auth is used, need to provide password file
+      # KAFKA_OPTS: "-Djava.security.auth.login.config=/etc/kafka/kafka_server_jaas.conf"
+      KAFKA_LISTENERS: INSIDE://0.0.0.0:9093,OUTSIDE://0.0.0.0:9092
+      # Where Kafka should connect to Zookeeper. See "zookeeper" section for endpoint details
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_INTER_BROKER_LISTENER_NAME: INSIDE
+      KAFKA_SASL_ENABLED_MECHANISMS: PLAIN
+      KAFKA_SASL_MECHANISM_INTER_BROKER_PROTOCOL: PLAIN
+    depends_on:
+      - zookeeper
+    # In case username/password auth is used, need to provide password file
+    # Map local dir with kafka_server_jaas.conf file as /etc/kafka inside image
+    #volumes:
+    #  - ./:/etc/kafka
+
+  # In case username/password auth is used, need to provide password file
+  # kafka_server_jaas.conf
+  #KafkaServer {
+  #  org.apache.kafka.common.security.plain.PlainLoginModule required
+  #  username="admin"
+  #  password="admin-secret"
+  #  user_admin="admin-secret";
+  #};
+  #Client {};
+
+  #docker-compose -f ./docker-compose.yaml run --entrypoint=/bin/sh kafka -c "kafka-topics.sh --bootstrap-server=kafka:9093 --list"
+  #docker-compose -f ./docker-compose.yaml run --entrypoint=/bin/sh kafka -c "kafka-topics.sh --bootstrap-server=kafka:9093 --create --topic qwe1"
+  #docker-compose -f ./docker-compose.yaml run --entrypoint=/bin/sh kafka -c "kafka-topics.sh --bootstrap-server=kafka:9093 --create --topic qwe2"
+  #docker-compose -f ./docker-compose.yaml run --entrypoint=/bin/sh kafka -c "kafka-topics.sh --bootstrap-server=kafka:9093 --list"
+  #docker-compose -f ./docker-compose.yaml run --entrypoint=/bin/sh kafka -c "kafka-topics.sh --bootstrap-server=kafka:9093 --delete --topic qwe2"
+  #docker-compose -f ./docker-compose.yaml run --entrypoint=/bin/sh kafka -c "kafka-topics.sh --bootstrap-server=kafka:9093 --list"
+  #docker-compose -f ./docker-compose.yaml run --entrypoint=/bin/sh kafka -c "kafka-topics.sh --bootstrap-server=kafka:9093 --delete --topic qwe1"
+  #docker-compose -f ./docker-compose.yaml run --entrypoint=/bin/sh kafka -c "kafka-topics.sh --bootstrap-server=kafka:9093 --list"
+
+  # ClickHouse server is one of the core components of the system
+  clickhouse:
+    image: yandex/clickhouse-server:21.9
+    restart: always
+    # Expose this port externally. This port will be available from host-machine as
+    # Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+    # tcp        0      0 0.0.0.0:8123            0.0.0.0:*               LISTEN      79906/docker-proxy
+    # tcp        0      0 0.0.0.0:9000            0.0.0.0:*               LISTEN      79906/docker-proxy
+    ports:
+      # http
+      - "8123:8123"
+      # native protocol
+      - "9000:9000"
+    # connect with clickhouse-client as
+    # clickhouse-client --host=127.0.0.1 --port=9000
+    # Map local dir with ClickHouse data inside image
+    # Check volumes on dockerhub
+    # https://hub.docker.com/layers/yandex/clickhouse-server/latest/images/sha256-9db821a942b548b8d3f6813b30d41cc4439dbab260f99739c22d56bcad8895de?context=explore
+    # VOLUME [/var/lib/clickhouse]
+    environment:
+      - CLICKHOUSE_DB=${CLICKHOUSE_DATABASE}
+      - CLICKHOUSE_USER=${CLICKHOUSE_USER}
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PASSWORD}
+    volumes:
+      - ${VOLUMES_ROOT}/clickhouse/data:/var/lib/clickhouse
+
+  # clickhouse-client is used for maintenance purposes
+  clickhouse-client:
+    image: yandex/clickhouse-client:21.9
+    entrypoint:
+      - /bin/sleep
+    command:
+      - infinity
+    # Mount specified sources dir into docker container in order to have .sql file with schema (create statements)
+    # available inside the docker container. Thus we can create schema calling clickhouse-client within the container
+    # Mount as read-only
+    volumes:
+      - ../../pkg/journal:/journal:ro
+
+  # /bin/sh -c "cat /trail/journal_clickhouse_schema.sql | /usr/bin/clickhouse-client --host=clickhouse-server --user=clickhouse_operator --password=clickhouse_operator_password --multiline --multiquery"
+    #            # additional option --database=dbname
+  #docker-compose -f ./docker-compose.yaml run --entrypoint=/bin/sh clickhouse-client -c "cat /trail/journal_clickhouse_schema.sql | /usr/bin/clickhouse-client --host=clickhouse-server --multiline --multiquery"
+
+  # MinIO is one of the core components of the system
+  minio:
+    image: minio/minio:RELEASE.2021-11-24T23-19-33Z
+    restart: always
+    # Expose this port externally. This port will be available from host-machine as
+    # Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+    # tcp        0      0 0.0.0.0:10000            0.0.0.0:*               LISTEN      79906/docker-proxy
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+    # Check volumes on dockerhub
+    # https://hub.docker.com/layers/minio/minio/latest/images/sha256-dccf1d8f3f558397442a8816627f6fc5fcdddea197ddae0886eadb4b26ceb917?context=explore
+    # VOLUME [/data]
+    volumes:
+      - ${VOLUMES_ROOT}/minio/data:/data
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server --address 0.0.0.0:10000 --console-address 0.0.0.0:10001 /data
+
+  # minio-mc is used for maintenance purposes
+  minio-mc:
+    image: minio/mc:latest
+    depends_on:
+      - minio
+    #volumes:
+    #  - "./hello.txt:/tmp/hello.txt"
+  # Make a bucket and upload file
+  # For long-running
+  # docker-compose -f ./docker-compose.yaml run minio-mc mc config host add docker http://minio:9000 minio1 minio123
+  # docker-compose -f ./docker-compose.yaml run minio-mc mb docker/my-bucket
+  # docker-compose -f ./docker-compose.yaml run minio-mc mc cp /tmp/hello.txt docker/my-bucket/foo.txt
+  # For short-running
+  #docker-compose -f ./docker-compose.yaml run --entrypoint=/bin/sh minio-mc -c "mc config host add minio-docker http://minio:9000 minio1 minio123; mc mb minio-docker/my-bucket"
+
+  # s3-client is used for maintenance purposes
+  s3-client:
+    image: amazon/aws-cli
+    environment:
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+    depends_on:
+      - minio
+
+#  # Envoy is required as a web-grpc proxy
+#  envoy:
+#    # You need to have envoy:dev in your local docker repo
+#    # It can be built with build-emvoy-image.sh from envoy folder
+#    image: envoy:dev
+#    restart: always
+#    # Expose this port internally. This port will not be available from host-machine
+#    # Expose this port externally. This port will be available from host-machine as
+#    # Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+#    # tcp        0      0 0.0.0.0:9092            0.0.0.0:*               LISTEN      79906/docker-proxy
+#    ports:
+#      # Expose port for browser connections
+#      - "8080:8080"
+#      # Expose admin access port
+#      #- "9901:9901"
+#    extra_hosts:
+#      # add host.docker.internal DNS entry in /etc/hosts and map it to host IP
+#      - "host.docker.internal:host-gateway"
+
+  # Manticore is required for full-text search
+  manticore:
+    image: manticoresearch/manticore:4.0.2
+    restart: always
+    # Expose this port internally. This port will not be available from host-machine
+    # Expose this port externally. This port will be available from host-machine as
+    # Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name
+    # tcp        0      0 0.0.0.0:9313            0.0.0.0:*               LISTEN      79906/docker-proxy
+    ports:
+      # 9306 for connections from a MySQL client
+      - "9306:9306"
+      # 9308 for connections via HTTP
+      - "9308:9308"
+      # 9312 for connections via a binary protocol (e.g. in case you run a cluster)
+      - "9312:9312"
+    # connect with mysql as
+    # mysql --host=127.0.0.1 --port=9306
+    volumes:
+      #- ${VOLUMES_ROOT}/manticore/conf:/etc/manticoresearch/manticore.conf
+      - ${VOLUMES_ROOT}/manticore/data:/var/lib/manticore
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 65535
+        hard: 65535
+      memlock:
+        soft: -1
+        hard: -1
+
+  # MySQL
+  mysql:
+    restart: always
+    image: percona:ps-8.0
+    ports:
+      - "3306:3306"
+    environment:
+      # Specifies the name of the database to be created when running the container.
+      # To create a user with full access to this database (GRANT ALL), set the MYSQL_USER and MYSQL_PASSWORD variables.
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      # Specifies the name for the user with full access to the database specified by the MYSQL_DATABASE.
+      - MYSQL_USER=${MYSQL_USER}
+      # Specifies the password for the user with full access to the database specified by the MYSQL_DATABASE.
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      # Specifies the password for the MySQL root user.
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      # Specifies whether to allow the container to be started with a blank password for the MySQL root user.
+      #- MYSQL_ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      #- mysql-conf-dir:/etc/my.cnf.d
+      - ${VOLUMES_ROOT}/mysql/data:/var/lib/mysql
+      - ${VOLUMES_ROOT}/mysql/logs:/var/log/mysql
+      #
+      # !!! IMPORTANT !!!
+      #
+      # Default user inside container uses 1001 uid and gid. Change your volume directory rights accordingly.
+      # docker run --rm -t percona:ps-8.0 sh -c 'id'
+      # uid=1001(mysql) gid=1001(mysql) groups=1001(mysql)
+      #
+      # mkdir -p ${VOLUMES_ROOT}/mysql/{data,logs}
+      # sudo chown 1001:1001 ${VOLUMES_ROOT}/mysql/{data,logs}
+
+  # PostgreSQL
+  postgresql:
+    restart: always
+    image: postgres:15-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      # Specifies the name of the database to be created when running the container.
+      - POSTGRES_DB=${POSTGRES_DB}
+      # Specifies the name for the user with full access to the database specified by the POSTGRES_DB.
+      - POSTGRES_USER=${POSTGRES_USER}
+      # Specifies the password for the user with full access to the database specified by the POSTGRES_DB.
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ${VOLUMES_ROOT}/postgresql/data:/var/lib/postgresql/data

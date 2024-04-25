@@ -1,0 +1,46 @@
+// Copyright The TBox Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// https://kubernetes.io/blog/2018/10/01/health-checking-grpc-servers-on-kubernetes/
+// https://github.com/grpc-ecosystem/grpc-health-probe/
+
+/**
+ * Heath Check represents possibility to check server's availability
+ */
+syntax = "proto3";
+
+package api.common;
+option go_package = "github.com/sunsingerus/tbox/pkg/api/common";
+
+// HealthCheckRequest represents health check request
+message HealthCheckRequest {
+    // Which service to check
+    string service = 1;
+}
+
+// ServingStatus represents status of the service
+enum ServingStatus {
+    // Unknown status
+    UNKNOWN = 0;
+    // Service is serving
+    SERVING = 1;
+    // Service is not serving
+    NOT_SERVING = 2;
+}
+
+// HealthCheckResponse represents response for health check request
+message HealthCheckResponse {
+    // Whether service is serving requests
+    ServingStatus status = 1;
+}

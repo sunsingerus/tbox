@@ -1,0 +1,41 @@
+// Copyright The TBox Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * Digest represents abstract digest of multiple types.
+ */
+syntax = "proto3";
+
+package api.common;
+option go_package = "github.com/sunsingerus/tbox/pkg/api/common";
+
+// DigestType represents all types of digests in the system.
+enum DigestType {
+    // Due to first enum value has to be zero in proto3
+    DIGEST_RESERVED = 0;
+    // Unspecified means we do not know its type
+    DIGEST_UNSPECIFIED = 100;
+    // MD5 digest
+    DIGEST_MD5 = 200;
+    // SHA256 digest
+    DIGEST_SHA256 = 300;
+}
+
+// Digest represents abstract digest.
+message Digest {
+    // Type of the digest. MD5 or SHA256 or something else
+    DigestType type = 100;
+    // Data. Any arbitrary sequence of bytes no longer than 2^32
+    bytes data = 200;
+}

@@ -1,0 +1,40 @@
+// Copyright The TBox Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+/**
+ * DataChunk represents one chunk (block,single piece) of data send used by DataChunks() function in Control Plane
+ */
+package api.common;
+option go_package = "github.com/sunsingerus/tbox/pkg/api/common";
+
+import "api/common/data_chunk.proto";
+import "api/common/metadata.proto";
+import "api/common/presentation_options.proto";
+
+// DataPacket is a chunk of data transferred with additional data.
+// Can be part of bigger data, transferred by smaller chunks.
+// Main difference with DataChunk is that Packet has additional data.
+message DataPacket {
+    // DataChunk is the purpose of the whole packet type.
+    DataChunk data_chunk = 100;
+
+    // StreamOptions is an optional transport-level information, describing whole data chunk stream,
+    // such as: encoding, compression, etc... [Optional].
+    optional PresentationOptions stream_options = 300;
+
+    // PayloadMetadata provides additional metadata, which describes payload. [Optional].
+    optional Metadata payload_metadata = 400;
+}

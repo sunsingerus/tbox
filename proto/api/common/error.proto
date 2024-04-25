@@ -1,0 +1,43 @@
+// Copyright The TBox Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * Address is an abstraction over domain-specific addresses.
+ * Represents all types of addresses in the system.
+ */
+syntax = "proto3";
+
+package api.common;
+option go_package = "github.com/sunsingerus/tbox/pkg/api/common";
+
+// ErrorDetail specifies optional error details
+message ErrorDetail {
+    // Name specifies error details name
+    optional string name = 100;
+
+    // Text specifies error details text
+    optional string text = 200;
+}
+
+// Error specifies general error
+message Error {
+    // Code specifies error code
+    int64 code = 100;
+
+    // Msg specifies error message
+    string msg = 200;
+
+    // Details specifies multiple error details of the error
+    repeated ErrorDetail details = 300;
+}

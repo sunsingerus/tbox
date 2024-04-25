@@ -1,0 +1,41 @@
+// Copyright The TBox Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * StatusRequest represents status request of the object(s)
+ */
+syntax = "proto3";
+
+package api.common;
+option go_package = "github.com/sunsingerus/tbox/pkg/api/common";
+
+import "api/common/domain.proto";
+import "api/common/address_map.proto";
+
+// ObjectRequest represents request for the object(s)
+message ObjectRequest {
+    // Request Domain - what type of entity the request is made about Ex.: tbox.DomainTask
+    optional Domain request_domain = 100;
+
+    // Result Domain - what type of entity is expected as a result.
+    // Ex.: tbox.DomainReport, tbox.DomainTask, tbox.DomainStatus, tbox.DomainFile
+    optional Domain result_domain = 200;
+
+    // Addresses of the entity the
+    // request is made about
+    AddressMap addresses = 300;
+
+    // Filter(s) for this entity (applicable only in case it is a json)
+    repeated string json_paths = 400;
+}

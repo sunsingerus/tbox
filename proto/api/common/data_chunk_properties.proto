@@ -1,0 +1,49 @@
+// Copyright The TBox Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * Metadata defines all possible metadata for objects.
+ * For example, for stream of dataChunks, is used to represent:
+ *   - chunk header,
+ *   - data descriptions,
+ *   - data encoding descriptions,
+ *   - etc.
+ * Can also be used as metadata description for any other objects.
+ * Since protobuf has ability not to send 'optional' fields, metadata can have full set of fields, describing
+ * all possible metadata options and have only few of them which are really used sent to the correspondent.
+ */
+syntax = "proto3";
+
+package api.common;
+option go_package = "github.com/sunsingerus/tbox/pkg/api/common";
+
+import "api/common/digest.proto";
+
+// DataChunkProperties specifies properties of a DataChunk
+message DataChunkProperties {
+    // Digest represents digest of the object. [Optional]
+    optional Digest digest = 100;
+
+    // Offset represents offset of the object within the stream. [Optional]
+    optional int64 offset = 200;
+
+    // Len represents length of the object. [Optional]
+    optional int64 len = 300;
+
+    // Total represents total length of the object. [Optional]
+    optional int64 total = 400;
+
+    // Last identifies last object within the stream. Optional
+    optional bool last = 500;
+}

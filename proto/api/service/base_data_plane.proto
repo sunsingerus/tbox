@@ -1,0 +1,63 @@
+// Copyright The TBox Authors. All rights reserved.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package api.service;
+option go_package = "github.com/sunsingerus/tbox/pkg/api/service";
+
+import "api/common/data_packet.proto";
+import "api/common/objects_list.proto";
+import "api/common/object_request.proto";
+import "api/common/object_status.proto";
+
+/**
+ * Control Plane represents communication between server and client(s).
+ * Communication is logically structured into the following areas:
+ *
+ *   - Commands. Commands flow into both directions, thus server can send commands to clients and clients can send
+ *     commands to server. Commands is usually a long-live connection, in order for clients and server
+ *     to receive commands with minimal delay. However, nothing prevents clients to connect to server
+ *     from time to time as necessary and exchange commands.
+ *
+ *   - DataChunks. DataChunks flow into both directions, thus server can send data stream to clients and clients
+ *     can send data stream to Server. Some commands can be followed by bulk data steamed from client and/or server.
+ *
+ *   - Metrics. Metrics are sent from client to server in order for server to keep track of client's activities.
+ *
+ *   - Status. Status requests are sent from client to server in order to check status of the entity(es). Status calls
+ *     are usually used for "check status and send updates" logic.
+ */
+service DataPlane {
+
+	// Bi-directional Data stream.
+	// Some commands may be followed by data load. Be it logs, dumps, etc.
+	rpc DataChunks(stream api.common.DataPacket) returns (stream api.common.DataPacket) {
+	}
+
+	// Uni-directional Data stream. One object is uploaded from the client to the server.
+	// Returns status of the uploaded object.
+	rpc UploadObject(stream api.common.DataPacket) returns (api.common.ObjectStatus) {
+	}
+
+	// Uni-directional Data stream. Multiple objects are uploaded from the client to the server.
+	// Returns list of statuses of the uploaded objects.
+	rpc UploadObjects(stream api.common.DataPacket) returns (api.common.ObjectsList) {
+	}
+
+	// Uni-directional Data stream. One object is uploaded from the client to the server.
+	// Returns status of the uploaded object.
+	rpc DownloadObject(api.common.ObjectRequest) returns (stream api.common.DataPacket) {
+	}
+}
